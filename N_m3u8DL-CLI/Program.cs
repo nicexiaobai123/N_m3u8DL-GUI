@@ -1,4 +1,4 @@
-﻿using CommandLine;
+using CommandLine;
 using CommandLine.Text;
 using Newtonsoft.Json.Linq;
 using System;
@@ -48,7 +48,31 @@ namespace N_m3u8DL_CLI.NetCore
         }
 
 
-        static void Main(string[] args)
+        // 入口点方法，用于决定是使用控制台模式还是GUI模式
+        public static void Main(string[] args)
+        {
+            // 检查是否有命令行参数，如果有则自动切换到控制台模式
+            if (args.Length > 0)
+            {
+                Global.ForceConsoleMode = true;
+            }
+
+            // 如果设置了强制使用控制台模式，则执行控制台逻辑
+            if (Global.ForceConsoleMode)
+            {
+                RunConsoleMode(args);
+            }
+            else
+            {
+                // 否则启动GUI模式
+                var app = new App();
+                app.InitializeComponent();
+                app.Run();
+            }
+        }
+
+        // 控制台模式的逻辑，原来Main方法的内容
+        private static void RunConsoleMode(string[] args)
         {
             /******************************************************/
             SetConsoleCtrlHandler(cancelHandler, true);
@@ -197,7 +221,7 @@ namespace N_m3u8DL_CLI.NetCore
               .WithNotParsed(errs => DisplayHelp(parserResult, errs));
         }
 
-        private static void DoWork(MyOptions o)
+        public static void DoWork(MyOptions o)
         {
             try
             {
@@ -306,6 +330,19 @@ namespace N_m3u8DL_CLI.NetCore
                 int inputRetryCount = 20;
             input:
                 string testurl = o.Input;
+
+                //如果没有输入URL，提示用户输入
+                if (string.IsNullOrEmpty(testurl))
+                {
+                    Global.WriteInit();
+                    Console.WriteLine("请输入要下载的链接：");
+                    testurl = Console.ReadLine();
+                    if (string.IsNullOrEmpty(testurl))
+                        Environment.Exit(0);
+                    o.Input = testurl;  //更新选项中的Input
+                    Console.Clear();
+                    Global.WriteInit();
+                }
 
                 //重试太多次，退出
                 if (inputRetryCount == 0)

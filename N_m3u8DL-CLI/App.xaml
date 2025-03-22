@@ -1,0 +1,15 @@
+<Application x:Class="N_m3u8DL_CLI.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:N_m3u8DL_CLI">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <!-- 确保颜色资源最先加载，因为其他样式依赖于它 -->
+                <ResourceDictionary Source="pack://application:,,,/N_m3u8DL-CLI;component/GUI/Styles/Colors.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/N_m3u8DL-CLI;component/GUI/Styles/ButtonStyles.xaml" />
+                <ResourceDictionary Source="pack://application:,,,/N_m3u8DL-CLI;component/GUI/Styles/TextBoxStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

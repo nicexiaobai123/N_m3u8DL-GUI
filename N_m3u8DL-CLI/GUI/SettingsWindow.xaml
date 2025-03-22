@@ -1,0 +1,138 @@
+<Window x:Class="N_m3u8DL_CLI.GUI.SettingsWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:N_m3u8DL_CLI.GUI"
+        xmlns:viewmodels="clr-namespace:N_m3u8DL_CLI.GUI.ViewModels"
+        mc:Ignorable="d"
+        Title="设置" 
+        Height="550" Width="600"
+        Background="{StaticResource BackgroundBrush}"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize">
+    
+    <Window.DataContext>
+        <viewmodels:SettingsViewModel />
+    </Window.DataContext>
+    
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        
+        <!-- 标题 -->
+        <TextBlock Grid.Row="0" Text="应用设置" FontSize="22" FontWeight="Bold" Margin="0,0,0,15" />
+        
+        <!-- 设置内容 -->
+        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <!-- 基本设置 -->
+                <GroupBox Header="基本设置" Padding="10" Margin="0,0,0,15">
+                    <StackPanel>
+                        <!-- 默认保存路径 -->
+                        <TextBlock Text="默认保存位置:" Margin="0,0,0,5" />
+                        <Grid>
+                            <TextBox Text="{Binding DefaultSavePath}" Style="{StaticResource StandardTextBox}" Height="35" IsReadOnly="True" />
+                            <Button Content="浏览..." Width="60" Height="28" HorizontalAlignment="Right" Margin="0,0,5,0" Style="{StaticResource StandardButton}"
+                                    Command="{Binding BrowseFolderCommand}" />
+                        </Grid>
+                    </StackPanel>
+                </GroupBox>
+                
+                <!-- 下载设置 -->
+                <GroupBox Header="下载设置" Padding="10" Margin="0,0,0,15">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="20" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        
+                        <!-- 线程设置 -->
+                        <StackPanel Grid.Row="0" Grid.Column="0">
+                            <TextBlock Text="最大线程数:" Margin="0,0,0,5" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding MaxThreads}" Style="{StaticResource StandardTextBox}" Width="100" />
+                                <TextBlock Text=" 个线程" VerticalAlignment="Center" Margin="5,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Row="0" Grid.Column="2">
+                            <TextBlock Text="最小线程数:" Margin="0,0,0,5" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding MinThreads}" Style="{StaticResource StandardTextBox}" Width="100" />
+                                <TextBlock Text=" 个线程" VerticalAlignment="Center" Margin="5,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                        
+                        <!-- 重试设置 -->
+                        <StackPanel Grid.Row="1" Grid.Column="0" Margin="0,15,0,0">
+                            <TextBlock Text="重试次数:" Margin="0,0,0,5" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding RetryCount}" Style="{StaticResource StandardTextBox}" Width="100" />
+                                <TextBlock Text=" 次" VerticalAlignment="Center" Margin="5,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                        
+                        <StackPanel Grid.Row="1" Grid.Column="2" Margin="0,15,0,0">
+                            <TextBlock Text="超时时间:" Margin="0,0,0,5" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding TimeOut}" Style="{StaticResource StandardTextBox}" Width="100" />
+                                <TextBlock Text=" 秒" VerticalAlignment="Center" Margin="5,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                        
+                        <!-- 速度限制 -->
+                        <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,15,0,0">
+                            <TextBlock Text="下载速度上限 (0表示不限制):" Margin="0,0,0,5" />
+                            <StackPanel Orientation="Horizontal">
+                                <TextBox Text="{Binding MaxSpeed}" Style="{StaticResource StandardTextBox}" Width="100" />
+                                <TextBlock Text=" KB/s" VerticalAlignment="Center" Margin="5,0,0,0" />
+                            </StackPanel>
+                        </StackPanel>
+                    </Grid>
+                </GroupBox>
+                
+                <!-- 代理设置 -->
+                <GroupBox Header="代理设置" Padding="10" Margin="0,0,0,15">
+                    <StackPanel>
+                        <CheckBox Content="不使用系统代理" IsChecked="{Binding NoProxy}" Margin="0,0,0,10" />
+                        <TextBlock Text="代理地址 (如: http://127.0.0.1:8080):" Margin="0,0,0,5" />
+                        <TextBox Text="{Binding ProxyAddress}" Style="{StaticResource StandardTextBox}" />
+                    </StackPanel>
+                </GroupBox>
+                
+                <!-- 高级设置 -->
+                <GroupBox Header="高级设置" Padding="10">
+                    <StackPanel>
+                        <CheckBox Content="开启混流mp4的FastStart特性" IsChecked="{Binding EnableMuxFastStart}" Margin="0,0,0,10" />
+                        <CheckBox Content="开启二进制合并分片" IsChecked="{Binding EnableBinaryMerge}" Margin="0,0,0,10" />
+                        <CheckBox Content="下载后删除临时文件夹" IsChecked="{Binding EnableDelAfterDone}" Margin="0,0,0,10" />
+                        <CheckBox Content="关闭混流中的日期写入" IsChecked="{Binding DisableDateInfo}" Margin="0,0,0,10" />
+                    </StackPanel>
+                </GroupBox>
+            </StackPanel>
+        </ScrollViewer>
+        
+        <!-- 底部按钮 -->
+        <Grid Grid.Row="2" Margin="0,15,0,0">
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="重置" Style="{StaticResource StandardButton}" Margin="0,0,10,0" Width="80"
+                        Command="{Binding ResetCommand}" />
+                <Button Content="取消" Style="{StaticResource StandardButton}" Margin="0,0,10,0" Width="80"
+                        Command="{Binding CancelCommand}" CommandParameter="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}" />
+                <Button Content="保存" Style="{StaticResource AccentButton}" Width="80"
+                        Command="{Binding SaveCommand}" CommandParameter="{Binding RelativeSource={RelativeSource FindAncestor, AncestorType={x:Type Window}}}" />
+            </StackPanel>
+        </Grid>
+    </Grid>
+</Window>

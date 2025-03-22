@@ -1,4 +1,4 @@
-﻿using CommandLine;
+using CommandLine;
 using CommandLine.Text;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace N_m3u8DL_CLI
 {
-    internal class MyOptions
+    public class MyOptions
     {
         [Value(0, Hidden = true, MetaName = "Input Source", HelpText = "Help_input", ResourceType = typeof(strings))]
         public string Input { get; set; }

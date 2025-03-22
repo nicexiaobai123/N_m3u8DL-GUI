@@ -1,0 +1,193 @@
+<Window x:Class="N_m3u8DL_CLI.GUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:N_m3u8DL_CLI.GUI"
+        xmlns:viewmodels="clr-namespace:N_m3u8DL_CLI.GUI.ViewModels"
+        xmlns:models="clr-namespace:N_m3u8DL_CLI.GUI.Models"
+        mc:Ignorable="d"
+        Title="N_m3u8DL-CLI 下载器" 
+        Height="650" Width="900"
+        MinHeight="500" MinWidth="800"
+        Background="{StaticResource BackgroundBrush}" 
+        WindowStartupLocation="CenterScreen">
+    
+    <Window.DataContext>
+        <viewmodels:MainViewModel />
+    </Window.DataContext>
+    
+    <Window.Resources>
+        <!-- 任务状态到颜色的转换器 -->
+        <local:TaskStatusToBrushConverter x:Key="TaskStatusToBrushConverter" />
+        
+        <!-- 字符串到可见性的转换器 -->
+        <local:StringToVisibilityConverter x:Key="StringToVisibilityConverter" />
+        
+        <!-- 数值为零转换为可见性的转换器 -->
+        <local:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter" />
+        
+        <!-- 下载任务模板 -->
+        <DataTemplate x:Key="DownloadTaskTemplate" DataType="{x:Type models:DownloadTask}">
+            <Grid Margin="5">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                
+                <!-- 任务名称和状态 -->
+                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
+                    <TextBlock Text="{Binding Name}" FontWeight="Bold" />
+                    <TextBlock Text=" - " />
+                    <TextBlock Text="{Binding Status}" Foreground="{Binding Status, Converter={StaticResource TaskStatusToBrushConverter}}" />
+                </StackPanel>
+                
+                <!-- 进度 -->
+                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,5">
+                    <Grid>
+                        <ProgressBar Value="{Binding Progress}" Height="5" Maximum="100" />
+                        <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="11" />
+                    </Grid>
+                </StackPanel>
+                
+                <!-- 详细信息 -->
+                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,2">
+                    <TextBlock Text="{Binding FormattedDownloadedSize}" />
+                    <TextBlock Text=" / " />
+                    <TextBlock Text="{Binding FormattedTotalSize}" />
+                    <TextBlock Text=" - " />
+                    <TextBlock Text="{Binding FormattedSpeed}" />
+                </StackPanel>
+                
+                <!-- 错误信息 -->
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" 
+                           Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}" />
+            </Grid>
+        </DataTemplate>
+    </Window.Resources>
+    
+    <Grid Margin="15">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+        
+        <!-- 顶部标题 -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,15">
+            <TextBlock Text="N_m3u8DL-CLI 视频下载器" FontSize="24" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
+            <TextBlock Text="一个简单易用的m3u8下载工具，支持AES-128解密、多线程下载等功能" Foreground="{StaticResource ForegroundBrush}" Margin="0,5,0,0" />
+        </StackPanel>
+        
+        <!-- 下载URL输入区域 -->
+        <Border Grid.Row="1" Background="{StaticResource CardBackgroundBrush}" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <!-- URL输入框 -->
+                <StackPanel Grid.Row="0">
+                    <TextBlock Text="下载链接 (m3u8)" FontWeight="Bold" Margin="0,0,0,5" />
+                    <TextBox Text="{Binding Url, UpdateSourceTrigger=PropertyChanged}" Style="{StaticResource UrlTextBox}" Height="35" />
+                </StackPanel>
+                
+                <!-- 存储选项 -->
+                <Grid Grid.Row="1" Margin="0,15,0,0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="15" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- 保存路径 -->
+                    <StackPanel Grid.Column="0">
+                        <TextBlock Text="保存位置" FontWeight="Bold" Margin="0,0,0,5" />
+                        <Grid>
+                            <TextBox Text="{Binding SavePath}" Style="{StaticResource StandardTextBox}" Height="35" IsReadOnly="True" />
+                            <Button Content="浏览..." Width="60" Height="28" HorizontalAlignment="Right" Margin="0,0,5,0" Style="{StaticResource StandardButton}"
+                                    Command="{Binding BrowseFolderCommand}" />
+                        </Grid>
+                    </StackPanel>
+                    
+                    <!-- 文件名 -->
+                    <StackPanel Grid.Column="2">
+                        <TextBlock Text="保存文件名 (可选)" FontWeight="Bold" Margin="0,0,0,5" />
+                        <TextBox Text="{Binding SaveFileName}" Style="{StaticResource StandardTextBox}" Height="35" />
+                    </StackPanel>
+                </Grid>
+                
+                <!-- 下载按钮 -->
+                <Button Grid.Row="2" Content="添加下载任务" Style="{StaticResource AccentButton}" 
+                        Height="40" Margin="0,15,0,0" HorizontalAlignment="Left" Width="150"
+                        Command="{Binding AddDownloadCommand}" />
+            </Grid>
+        </Border>
+        
+        <!-- 下载列表区域 -->
+        <Border Grid.Row="2" Background="{StaticResource CardBackgroundBrush}" CornerRadius="8" Padding="15" Margin="0,0,0,15">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                
+                <!-- 标题和操作按钮 -->
+                <Grid Grid.Row="0" Margin="0,0,0,10">
+                    <TextBlock Text="下载任务列表" FontWeight="Bold" VerticalAlignment="Center" />
+                    
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button Content="暂停/继续" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Width="80"
+                                Command="{Binding PauseResumeCommand}" CommandParameter="{Binding SelectedTask}" />
+                        <Button Content="删除" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Width="60"
+                                Command="{Binding DeleteTaskCommand}" CommandParameter="{Binding SelectedTask}" />
+                        <Button Content="打开文件夹" Style="{StaticResource StandardButton}" Width="90"
+                                Command="{Binding OpenFolderCommand}" CommandParameter="{Binding SelectedTask}" />
+                    </StackPanel>
+                </Grid>
+                
+                <!-- 下载列表 -->
+                <ListView Grid.Row="1" ItemsSource="{Binding DownloadTasks}" 
+                          ItemTemplate="{StaticResource DownloadTaskTemplate}"
+                          SelectedItem="{Binding SelectedTask}"
+                          BorderThickness="0" Background="Transparent">
+                    <ListView.ItemContainerStyle>
+                        <Style TargetType="ListViewItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="Padding" Value="8" />
+                            <Setter Property="Margin" Value="0,2" />
+                            <Setter Property="BorderThickness" Value="0,0,0,1" />
+                            <Setter Property="BorderBrush" Value="#EEEEEE" />
+                        </Style>
+                    </ListView.ItemContainerStyle>
+                </ListView>
+                
+                <!-- 无数据提示 -->
+                <TextBlock Grid.Row="1" Text="暂无下载任务，请添加下载链接" 
+                           HorizontalAlignment="Center" VerticalAlignment="Center" 
+                           Foreground="#AAAAAA" FontSize="14"
+                           Visibility="{Binding DownloadTasks.Count, Converter={StaticResource ZeroToVisibilityConverter}}" />
+            </Grid>
+        </Border>
+        
+        <!-- 底部状态栏 -->
+        <Grid Grid.Row="3">
+            <StackPanel Orientation="Horizontal">
+                <TextBlock Text="状态: " />
+                <TextBlock Text="{Binding StatusMessage}" />
+            </StackPanel>
+            
+            <Button Content="设置" Style="{StaticResource TextButton}" HorizontalAlignment="Right"
+                    Command="{Binding OpenSettingsCommand}" />
+        </Grid>
+    </Grid>
+</Window>

@@ -1,4 +1,4 @@
-﻿using BrotliSharpLib;
+using BrotliSharpLib;
 using Newtonsoft.Json;
 using System;
 using System.Collections;
@@ -31,6 +31,9 @@ namespace N_m3u8DL_CLI
         public static bool NoProxy { get => noProxy; set => noProxy = value; }
         public static string UseProxyAddress { get => useProxyAddress; set => useProxyAddress = value; }
 
+        // 控制应用程序模式：true=使用控制台模式，false=使用GUI模式
+        private static bool forceConsoleMode = true;
+        public static bool ForceConsoleMode { get => forceConsoleMode; set => forceConsoleMode = value; }
 
         /*===============================================================================*/
         static Version ver = System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
