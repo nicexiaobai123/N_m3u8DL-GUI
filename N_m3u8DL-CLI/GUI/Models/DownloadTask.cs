@@ -21,6 +21,7 @@ namespace N_m3u8DL_CLI.GUI.Models
             Merging,    // 合并中
             Completed,  // 已完成
             Failed,     // 失败
+            Deleting,   // 删除中
             Deleted     // 已删除
         }
 
@@ -124,8 +125,16 @@ namespace N_m3u8DL_CLI.GUI.Models
             {
                 _status = value;
                 OnPropertyChanged();
+                
+                // 触发状态变化事件
+                StatusChanged?.Invoke(this, EventArgs.Empty);
             }
         }
+        
+        /// <summary>
+        /// 状态变化事件
+        /// </summary>
+        public event EventHandler StatusChanged;
 
         /// <summary>
         /// 下载进度 (0-100)

@@ -100,12 +100,73 @@ namespace N_m3u8DL_CLI.GUI.ViewModels
             get => _selectedTask;
             set
             {
+                // 取消订阅旧任务的状态变化事件
+                if (_selectedTask != null)
+                {
+                    _selectedTask.StatusChanged -= SelectedTask_StatusChanged;
+                }
+
                 _selectedTask = value;
                 OnPropertyChanged();
                 (PauseResumeCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 (DeleteTaskCommand as RelayCommand)?.RaiseCanExecuteChanged();
                 (OpenFolderCommand as RelayCommand)?.RaiseCanExecuteChanged();
+                
+                // 更新状态栏显示选中任务的状态
+                if (value != null)
+                {
+                    // 订阅新任务的状态变化事件
+                    value.StatusChanged += SelectedTask_StatusChanged;
+                    UpdateStatusMessage(value);
+                }
+                else
+                {
+                    StatusMessage = "准备就绪";
+                }
             }
+        }
+        
+        /// <summary>
+        /// 当选中任务的状态发生变化时更新状态栏
+        /// </summary>
+        private void SelectedTask_StatusChanged(object sender, EventArgs e)
+        {
+            if (sender is DownloadTask task)
+            {
+                UpdateStatusMessage(task);
+            }
+        }
+        
+        /// <summary>
+        /// 更新状态栏消息
+        /// </summary>
+        private void UpdateStatusMessage(DownloadTask task)
+        {
+            // 创建一个详细的状态消息，包括任务名称、状态、进度、大小信息
+            string statusInfo = $" {task.Name} - {task.Status}";
+            
+            // 添加进度信息（当下载中或暂停时显示）
+            if (task.Status == DownloadTask.TaskStatus.Downloading || 
+                task.Status == DownloadTask.TaskStatus.Paused)
+            {
+                statusInfo += $" - 进度: {task.Progress:F2}%";
+                
+                // 添加大小信息
+                if (!string.IsNullOrEmpty(task.FormattedDownloadedSize) && 
+                    !string.IsNullOrEmpty(task.FormattedTotalSize))
+                {
+                    statusInfo += $" | {task.FormattedDownloadedSize}/{task.FormattedTotalSize}";
+                }
+                
+                // 添加速度信息
+                if (task.Speed > 0 && 
+                    task.Status == DownloadTask.TaskStatus.Downloading)
+                {
+                    statusInfo += $" | {task.FormattedSpeed}";
+                }
+            }
+            
+            StatusMessage = statusInfo;
         }
 
         /// <summary>
@@ -278,7 +339,7 @@ namespace N_m3u8DL_CLI.GUI.ViewModels
             return task != null && task.Status != DownloadTask.TaskStatus.Deleted;
         }
 
-        private void DeleteTask(object parameter)
+        private async void DeleteTask(object parameter)
         {
             var task = parameter as DownloadTask ?? SelectedTask;
             if (task == null)
@@ -287,17 +348,27 @@ namespace N_m3u8DL_CLI.GUI.ViewModels
             try
             {
                 // 确认是否删除
-                var result = CustomMessageBox.Show("确定要删除任务 \"" + task.Name + "\" 吗？", "确认", MessageBoxButton.YesNo, MessageBoxImage.Question);
+                var result = CustomMessageBox.Show("确定要删除任务 \"" + task.Name + "\" 吗？\n删除后将清除所有下载临时文件。", "确认", MessageBoxButton.YesNo, MessageBoxImage.Question);
                 if (result == MessageBoxResult.No)
                     return;
 
-                // 删除任务
-                DownloadService.Instance.DeleteDownload(task);
+                // 更新状态消息
+                StatusMessage = $"正在删除任务 {task.Name}...";
                 
-                // 如果是直接从列表中删除，则从集合中移除
-                if (task.Status == DownloadTask.TaskStatus.Completed || task.Status == DownloadTask.TaskStatus.Failed)
+                // 删除任务和临时文件
+                await DownloadService.Instance.DeleteDownloadAsync(task);
+                
+                // 删除完成后从任务列表中移除该任务
+                DownloadTasks.Remove(task);
+                
+                // 选择新的任务（如果有）
+                if (DownloadTasks.Count > 0)
                 {
-                    DownloadTasks.Remove(task);
+                    SelectedTask = DownloadTasks[0];
+                }
+                else
+                {
+                    SelectedTask = null;
                 }
                 
                 StatusMessage = $"已删除任务 {task.Name}";

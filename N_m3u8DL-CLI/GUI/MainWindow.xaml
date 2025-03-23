@@ -7,7 +7,7 @@
         xmlns:viewmodels="clr-namespace:N_m3u8DL_CLI.GUI.ViewModels"
         xmlns:models="clr-namespace:N_m3u8DL_CLI.GUI.Models"
         mc:Ignorable="d"
-        Title="N_m3u8DL-CLI 下载器" 
+        Title="m3u8-Nioce 下载器" 
         Height="650" Width="900"
         MinHeight="500" MinWidth="800"
         Background="{StaticResource BackgroundBrush}" 
@@ -49,10 +49,16 @@
                 </StackPanel>
                 
                 <!-- 进度 -->
-                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,5">
+                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,8">
                     <Grid>
-                        <ProgressBar Value="{Binding Progress}" Height="5" Maximum="100" />
-                        <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" HorizontalAlignment="Right" Margin="0,8,0,0" FontSize="11" />
+                        <ProgressBar Value="{Binding Progress}" Height="10" Maximum="100" Margin="0,0,0,8" BorderThickness="1" BorderBrush="#AAAAAA">
+                            <ProgressBar.Resources>
+                                <Style TargetType="Border">
+                                    <Setter Property="CornerRadius" Value="5"/>
+                                </Style>
+                            </ProgressBar.Resources>
+                        </ProgressBar>
+                        <TextBlock Text="{Binding Progress, StringFormat={}{0:F2}%}" HorizontalAlignment="Right" Margin="0,18,5,0" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
                     </Grid>
                 </StackPanel>
                 
@@ -82,8 +88,31 @@
         
         <!-- 顶部标题 -->
         <StackPanel Grid.Row="0" Margin="0,0,0,15">
-            <TextBlock Text="N_m3u8DL-CLI 视频下载器" FontSize="24" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
-            <TextBlock Text="一个简单易用的m3u8下载工具，支持AES-128解密、多线程下载等功能" Foreground="{StaticResource ForegroundBrush}" Margin="0,5,0,0" />
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="Auto" />
+                </Grid.RowDefinitions>
+                
+                <TextBlock Grid.Row="0" Text="m3u8-Nioce 视频下载器" FontSize="24" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
+                
+                <Grid Grid.Row="1">
+                    <TextBlock Text="一个简单易用的m3u8下载工具，支持AES-128解密、多线程下载等功能" 
+                               Foreground="{StaticResource ForegroundBrush}" 
+                               Margin="0,5,0,0" 
+                               VerticalAlignment="Center" />
+                               
+                    <!-- 设置按钮放在第二行右侧，与描述文本对齐 -->
+                    <Button Content="设置" 
+                            Style="{StaticResource AccentButton}" 
+                            HorizontalAlignment="Right" 
+                            VerticalAlignment="Center"
+                            Width="80" 
+                            Height="32" 
+                            Margin="0,5,20,0"
+                            Command="{Binding OpenSettingsCommand}" />
+                </Grid>
+            </Grid>
         </StackPanel>
         
         <!-- 下载URL输入区域 -->
@@ -175,7 +204,7 @@
                 <TextBlock Grid.Row="1" Text="暂无下载任务，请添加下载链接" 
                            HorizontalAlignment="Center" VerticalAlignment="Center" 
                            Foreground="#AAAAAA" FontSize="14"
-                           Visibility="{Binding DownloadTasks.Count, Converter={StaticResource ZeroToVisibilityConverter}}" />
+                           Visibility="{Binding DownloadTasks.Count, Converter={StaticResource ZeroToVisibilityConverter}, ConverterParameter=true}" />
             </Grid>
         </Border>
         
@@ -185,9 +214,6 @@
                 <TextBlock Text="状态: " />
                 <TextBlock Text="{Binding StatusMessage}" />
             </StackPanel>
-            
-            <Button Content="设置" Style="{StaticResource TextButton}" HorizontalAlignment="Right"
-                    Command="{Binding OpenSettingsCommand}" />
         </Grid>
     </Grid>
 </Window>

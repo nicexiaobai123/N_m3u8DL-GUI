@@ -1,4 +1,4 @@
-﻿using Newtonsoft.Json.Linq;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Diagnostics;
 using System.IO;
@@ -187,7 +187,7 @@ namespace N_m3u8DL_CLI
                     sd.TimeOut = TimeOut;
                     sd.SegDur = firstSeg["duration"].Value<double>();
                     if (sd.SegDur < 0) sd.SegDur = 0; //防止负数
-                    sd.FileUrl = firstSeg["segUri"].Value<string>();
+                        sd.FileUrl = firstSeg["segUri"].Value<string>();
                     //VTT字幕
                     if (isVTT == false && (sd.FileUrl.Trim('\"').EndsWith(".vtt") || sd.FileUrl.Trim('\"').EndsWith(".webvtt")))
                         isVTT = true;
@@ -243,7 +243,7 @@ namespace N_m3u8DL_CLI
 
             //构造包含所有分片的新的segments
             JArray segments = new JArray();
-            for (int i = 0; i < parts.Count; i++)
+            for (int i = 0; i < parts.Count; i++) 
             {
                 var tmp = JArray.Parse(parts[i].ToString());
                 for (int j = 0; j < tmp.Count; j++)
@@ -355,7 +355,15 @@ namespace N_m3u8DL_CLI
                 {
                     string exePath = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule.FileName);
                     string driverName = exePath.Remove(exePath.IndexOf(':'));
-                    Console.Title = "Done.";
+                    try
+                    {
+                        Console.Title = "Done.";
+                    }
+                    catch (Exception) 
+                    {
+                        // 忽略设置控制台标题失败的异常
+                        // 可能是从GUI环境启动，没有真正的控制台窗口
+                    }
                     LOGGER.WriteLine(strings.startMerging);
                     LOGGER.PrintLine(strings.startMerging, LOGGER.Warning);
                     //VTT字幕
@@ -617,7 +625,7 @@ namespace N_m3u8DL_CLI
                         parser.DownDir = Path.Combine(Path.GetDirectoryName(DownDir), parser.DownName);
                         LOGGER.WriteLine(strings.startParsing + externalAudioUrl);
                         LOGGER.WriteLine(strings.downloadingExternalAudioTrack);
-                        DownName = parser.DownName;
+                        DownName = DownName + "(Audio)";
                         fflogName = "_ffreport(Audio).log";
                         DownDir = parser.DownDir;
                         parser.Parse();  //开始解析
@@ -656,7 +664,15 @@ namespace N_m3u8DL_CLI
                 }
                 else
                 {
-                    Console.Title = "Done.";
+                    try
+                    {
+                        Console.Title = "Done.";
+                    }
+                    catch (Exception)
+                    {
+                        // 忽略设置控制台标题失败的异常
+                        // 可能是从GUI环境启动，没有真正的控制台窗口
+                    }
                     LOGGER.PrintLine(strings.taskDone, LOGGER.Warning);
                     LOGGER.WriteLine(strings.taskDone
                         + "\r\n\r\nTask End: " + DateTime.Now.ToString("yyyy/MM/dd HH:mm:ss"));

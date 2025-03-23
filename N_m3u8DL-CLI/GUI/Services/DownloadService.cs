@@ -7,6 +7,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Windows;
 using N_m3u8DL_CLI.GUI.Models;
 
 namespace N_m3u8DL_CLI.GUI.Services
@@ -78,11 +79,10 @@ namespace N_m3u8DL_CLI.GUI.Services
                         // 添加基本参数
                         arguments.Add($"--workDir \"{task.SavePath}\"");
                         
-                        // 如果用户指定了保存文件名
-                        if (!string.IsNullOrEmpty(task.SaveFileName))
-                        {
-                            arguments.Add($"--saveName \"{task.SaveFileName}\"");
-                        }
+                        // 使用任务名称作为保存文件名，确保临时目录名与任务名一致
+                        // 如果SaveFileName为空，则使用任务名
+                        string saveName = !string.IsNullOrEmpty(task.SaveFileName) ? task.SaveFileName : task.Name;
+                        arguments.Add($"--saveName \"{saveName}\"");
                         
                         // 从应用设置中获取其他参数
                         var settings = SettingsManager.Instance.Settings;
@@ -257,6 +257,30 @@ namespace N_m3u8DL_CLI.GUI.Services
                         task.Progress = progress;
                     }
                 }
+                
+                // 尝试解析已下载大小和总大小信息
+                // 假设格式类似于: 已下载: 34.25 MB / 总大小: 100.00 MB
+                Regex sizeRegex = new Regex(@"(\d+\.?\d*)\s*([KMGT]?B)\s*\/\s*(\d+\.?\d*)\s*([KMGT]?B)");
+                match = sizeRegex.Match(output);
+                if (match.Success && match.Groups.Count > 4)
+                {
+                    if (double.TryParse(match.Groups[1].Value, out double downloadedSize) &&
+                        double.TryParse(match.Groups[3].Value, out double totalSize))
+                    {
+                        string downloadedUnit = match.Groups[2].Value;
+                        string totalUnit = match.Groups[4].Value;
+                        
+                        // 将大小转换为字节
+                        task.DownloadedSize = ConvertToBytes(downloadedSize, downloadedUnit);
+                        task.TotalSize = ConvertToBytes(totalSize, totalUnit);
+                        
+                        // 使用已下载大小和总大小计算进度百分比
+                        if (task.TotalSize > 0)
+                        {
+                            task.Progress = (double)task.DownloadedSize / task.TotalSize * 100;
+                        }
+                    }
+                }
             }
 
             // 解析下载速度
@@ -285,6 +309,36 @@ namespace N_m3u8DL_CLI.GUI.Services
 
             // 添加到日志
             task.AddToLog(output);
+        }
+        
+        /// <summary>
+        /// 将带单位的大小转换为字节数
+        /// </summary>
+        private long ConvertToBytes(double size, string unit)
+        {
+            long bytes = 0;
+            switch (unit.ToUpper())
+            {
+                case "B":
+                    bytes = (long)size;
+                    break;
+                case "KB":
+                    bytes = (long)(size * 1024);
+                    break;
+                case "MB":
+                    bytes = (long)(size * 1024 * 1024);
+                    break;
+                case "GB":
+                    bytes = (long)(size * 1024 * 1024 * 1024);
+                    break;
+                case "TB":
+                    bytes = (long)(size * 1024 * 1024 * 1024 * 1024);
+                    break;
+                default:
+                    bytes = (long)size;
+                    break;
+            }
+            return bytes;
         }
 
         /// <summary>
@@ -316,7 +370,7 @@ namespace N_m3u8DL_CLI.GUI.Services
         /// <summary>
         /// 删除下载任务
         /// </summary>
-        public void DeleteDownload(DownloadTask task)
+        public async Task DeleteDownloadAsync(DownloadTask task)
         {
             if (task == null)
                 return;
@@ -325,9 +379,108 @@ namespace N_m3u8DL_CLI.GUI.Services
             if (task.Status == DownloadTask.TaskStatus.Downloading)
             {
                 PauseDownload(task);
+                
+                // 添加短暂延迟，确保下载进程完全停止并释放文件
+                task.AddToLog("等待下载进程停止...");
+                await Task.Delay(1000); // 等待1秒
             }
+            
+            // 设置为删除中状态
+            task.Status = DownloadTask.TaskStatus.Deleting;
+            task.AddToLog("删除中...");
+            
+            // 使用Task.Run在后台线程执行删除操作
+            await Task.Run(() => {
+                // 删除临时文件
+                try
+                {
+                    // 获取任务的基本名称（不含状态信息）
+                    string baseName = task.Name;
+                    // 如果名称包含状态信息（如" - Paused"），则去除
+                    int dashIndex = baseName.LastIndexOf(" - ");
+                    if (dashIndex > 0)
+                    {
+                        baseName = baseName.Substring(0, dashIndex);
+                    }
+                    
+                    // 首先查找与任务相关的所有可能的临时目录
+                    var possibleTempDirs = Directory.GetDirectories(task.SavePath)
+                        .Where(d => 
+                        {
+                            string dirName = Path.GetFileName(d);
+                            // 检查目录名是否包含当前日期部分（例如，目录名以"_20230323"结尾）
+                            // 或者目录名与任务名称完全匹配
+                            string dateStr = task.StartTime.ToString("yyyyMMdd");
+                            return dirName.EndsWith(dateStr, StringComparison.OrdinalIgnoreCase) || 
+                                   dirName.Contains("_" + dateStr) ||
+                                   dirName.Equals(baseName, StringComparison.OrdinalIgnoreCase);
+                        })
+                        .ToList();
+                    
+                    // 如果找不到可能的临时目录，则尝试使用任务名称作为临时目录名
+                    if (!possibleTempDirs.Any())
+                    {
+                        possibleTempDirs.Add(Path.Combine(task.SavePath, baseName));
+                    }
+                    
+                    // 尝试删除所有找到的可能的临时目录
+                    foreach (var tempDir in possibleTempDirs)
+                    {
+                        if (Directory.Exists(tempDir))
+                        {
+                            task.AddToLog($"正在删除临时目录: {tempDir}");
+                            
+                            // 尝试多次删除，以应对文件可能被锁定的情况
+                            int retryCount = 3;
+                            bool deleted = false;
+                            
+                            for (int i = 0; i < retryCount && !deleted; i++)
+                            {
+                                try
+                                {
+                                    Directory.Delete(tempDir, true);
+                                    deleted = true;
+                                    task.AddToLog($"已删除临时目录: {tempDir}");
+                                }
+                                catch (IOException)
+                                {
+                                    // 如果文件被占用，等待一会再试
+                                    if (i < retryCount - 1)
+                                    {
+                                        task.AddToLog($"临时目录被占用，等待后重试...");
+                                        Thread.Sleep(1000); // 等待1秒
+                                    }
+                                    else
+                                    {
+                                        throw; // 最后一次尝试失败后抛出异常
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            task.AddToLog($"未找到临时目录: {tempDir}");
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // 记录删除失败，但继续执行
+                    task.AddToLog($"删除临时文件时出错: {ex.Message}");
+                }
+            });
 
+            // 删除完成，设置状态为已删除
             task.Status = DownloadTask.TaskStatus.Deleted;
+            task.AddToLog("删除完成");
+        }
+
+        /// <summary>
+        /// 删除下载任务（同步版本，保持向后兼容）
+        /// </summary>
+        public void DeleteDownload(DownloadTask task)
+        {
+            DeleteDownloadAsync(task).Wait();
         }
 
         /// <summary>

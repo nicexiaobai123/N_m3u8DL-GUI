@@ -325,12 +325,12 @@ namespace N_m3u8DL_CLI.GUI.ViewModels
                         "Download");
                     MaxThreads = 32;
                     MinThreads = 16;
-                    RetryCount = 5;
+                    RetryCount = 15;
                     TimeOut = 10;
                     MaxSpeed = 0;
-                    NoProxy = false;
+                    NoProxy = true; // 修改为默认禁用系统代理
                     ProxyAddress = "";
-                    EnableBinaryMerge = true;
+                    EnableBinaryMerge = false; // 修改为默认不启用二进制合并
                     EnableDelAfterDone = true;
                     EnableMuxFastStart = true;
                     DisableDateInfo = false;

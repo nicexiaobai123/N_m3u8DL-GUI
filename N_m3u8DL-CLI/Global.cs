@@ -32,7 +32,7 @@ namespace N_m3u8DL_CLI
         public static string UseProxyAddress { get => useProxyAddress; set => useProxyAddress = value; }
 
         // 控制应用程序模式：true=使用控制台模式，false=使用GUI模式
-        private static bool forceConsoleMode = true;
+        private static bool forceConsoleMode = false;
         public static bool ForceConsoleMode { get => forceConsoleMode; set => forceConsoleMode = value; }
 
         /*===============================================================================*/
