@@ -8,10 +8,11 @@
         xmlns:models="clr-namespace:N_m3u8DL_CLI.GUI.Models"
         mc:Ignorable="d"
         Title="m3u8-Nioce 下载器" 
-        Height="650" Width="900"
-        MinHeight="500" MinWidth="800"
+        Height="750" Width="900"
+        MinHeight="600" MinWidth="800"
         Background="{StaticResource BackgroundBrush}" 
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        KeyDown="Window_KeyDown">
     
     <Window.DataContext>
         <viewmodels:MainViewModel />
@@ -27,11 +28,14 @@
         <!-- 数值为零转换为可见性的转换器 -->
         <local:ZeroToVisibilityConverter x:Key="ZeroToVisibilityConverter" />
         
+        <!-- 页码转换器 -->
+        <local:PageNumberToBrushConverter x:Key="PageNumberToBrushConverter" />
+        <local:PageNumberToForegroundConverter x:Key="PageNumberToForegroundConverter" />
+        
         <!-- 下载任务模板 -->
         <DataTemplate x:Key="DownloadTaskTemplate" DataType="{x:Type models:DownloadTask}">
-            <Grid Margin="5">
+            <Grid Margin="3">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                     <RowDefinition Height="Auto" />
                 </Grid.RowDefinitions>
@@ -41,38 +45,47 @@
                     <ColumnDefinition Width="Auto" />
                 </Grid.ColumnDefinitions>
                 
-                <!-- 任务名称和状态 -->
-                <StackPanel Grid.Row="0" Grid.Column="0" Orientation="Horizontal">
-                    <TextBlock Text="{Binding Name}" FontWeight="Bold" />
-                    <TextBlock Text=" - " />
-                    <TextBlock Text="{Binding Status}" Foreground="{Binding Status, Converter={StaticResource TaskStatusToBrushConverter}}" />
-                </StackPanel>
+                <!-- 任务名称、状态和大小信息 -->
+                <Grid Grid.Row="0" Grid.Column="0">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- 任务名称和状态 -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal">
+                        <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="13" />
+                        <TextBlock Text=" - " FontSize="13" />
+                        <TextBlock Text="{Binding Status}" FontSize="13" Foreground="{Binding Status, Converter={StaticResource TaskStatusToBrushConverter}}" />
+                    </StackPanel>
+                    
+                    <!-- 文件大小和下载速度 -->
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="5,0,0,0">
+                        <TextBlock Text="{Binding FormattedDownloadedSize}" FontSize="12" />
+                        <TextBlock Text="/" FontSize="12" Margin="2,0" />
+                        <TextBlock Text="{Binding FormattedTotalSize}" FontSize="12" />
+                        <TextBlock Text=" @ " FontSize="12" Margin="4,0,0,0" />
+                        <TextBlock Text="{Binding FormattedSpeed}" FontSize="12" />
+                    </StackPanel>
+                </Grid>
                 
-                <!-- 进度 -->
-                <StackPanel Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,8,0,8">
-                    <Grid>
-                        <ProgressBar Value="{Binding Progress}" Height="10" Maximum="100" Margin="0,0,0,8" BorderThickness="1" BorderBrush="#AAAAAA">
-                            <ProgressBar.Resources>
-                                <Style TargetType="Border">
-                                    <Setter Property="CornerRadius" Value="5"/>
-                                </Style>
-                            </ProgressBar.Resources>
-                        </ProgressBar>
-                        <TextBlock Text="{Binding Progress, StringFormat={}{0:F2}%}" HorizontalAlignment="Right" Margin="0,18,5,0" FontSize="13" FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
-                    </Grid>
-                </StackPanel>
+                <!-- 进度条 -->
+                <Grid Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,3,0,0">
+                    <ProgressBar Value="{Binding Progress}" Height="8" Maximum="100" BorderThickness="1" BorderBrush="#AAAAAA">
+                        <ProgressBar.Resources>
+                            <Style TargetType="Border">
+                                <Setter Property="CornerRadius" Value="4"/>
+                            </Style>
+                        </ProgressBar.Resources>
+                    </ProgressBar>
+                    <TextBlock Text="{Binding Progress, StringFormat={}{0:F1}%}" HorizontalAlignment="Right" 
+                               VerticalAlignment="Center" Margin="0,0,5,0" FontSize="11" 
+                               FontWeight="Bold" Foreground="{StaticResource PrimaryBrush}" />
+                </Grid>
                 
-                <!-- 详细信息 -->
-                <StackPanel Grid.Row="2" Grid.Column="0" Orientation="Horizontal" Margin="0,2">
-                    <TextBlock Text="{Binding FormattedDownloadedSize}" />
-                    <TextBlock Text=" / " />
-                    <TextBlock Text="{Binding FormattedTotalSize}" />
-                    <TextBlock Text=" - " />
-                    <TextBlock Text="{Binding FormattedSpeed}" />
-                </StackPanel>
-                
-                <!-- 错误信息 -->
-                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding ErrorMessage}" Foreground="{StaticResource ErrorBrush}" 
+                <!-- 错误信息 (如果有) -->
+                <TextBlock Grid.Row="1" Grid.Column="1" Text="{Binding ErrorMessage}" FontSize="11"
+                           Foreground="{StaticResource ErrorBrush}" VerticalAlignment="Center"
                            Visibility="{Binding ErrorMessage, Converter={StaticResource StringToVisibilityConverter}}" />
             </Grid>
         </DataTemplate>
@@ -174,7 +187,17 @@
                 <Grid Grid.Row="0" Margin="0,0,0,10">
                     <TextBlock Text="下载任务列表" FontWeight="Bold" VerticalAlignment="Center" />
                     
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="360,5,0,5">
+                        <!-- 批量操作按钮 -->
+                        <Button Content="全部暂停/继续" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Width="100"
+                                Command="{Binding PauseResumeAllCommand}" ToolTip="暂停或继续所有下载任务" />
+                        <Button Content="全部清除" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Width="80"
+                                Command="{Binding ClearAllTasksCommand}" ToolTip="清除所有下载任务" />
+                        
+                        <!-- 分隔符 -->
+                        <Rectangle Width="1" Height="20" Fill="#DDDDDD" Margin="0,0,8,0" />
+                        
+                        <!-- 单个任务操作按钮 -->
                         <Button Content="暂停/继续" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Width="80"
                                 Command="{Binding PauseResumeCommand}" CommandParameter="{Binding SelectedTask}" />
                         <Button Content="删除" Style="{StaticResource StandardButton}" Margin="0,0,8,0" Width="60"
@@ -184,27 +207,144 @@
                     </StackPanel>
                 </Grid>
                 
-                <!-- 下载列表 -->
-                <ListView Grid.Row="1" ItemsSource="{Binding DownloadTasks}" 
-                          ItemTemplate="{StaticResource DownloadTaskTemplate}"
-                          SelectedItem="{Binding SelectedTask}"
-                          BorderThickness="0" Background="Transparent">
-                    <ListView.ItemContainerStyle>
-                        <Style TargetType="ListViewItem">
-                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
-                            <Setter Property="Padding" Value="8" />
-                            <Setter Property="Margin" Value="0,2" />
-                            <Setter Property="BorderThickness" Value="0,0,0,1" />
-                            <Setter Property="BorderBrush" Value="#EEEEEE" />
-                        </Style>
-                    </ListView.ItemContainerStyle>
-                </ListView>
-                
-                <!-- 无数据提示 -->
-                <TextBlock Grid.Row="1" Text="暂无下载任务，请添加下载链接" 
-                           HorizontalAlignment="Center" VerticalAlignment="Center" 
-                           Foreground="#AAAAAA" FontSize="14"
-                           Visibility="{Binding DownloadTasks.Count, Converter={StaticResource ZeroToVisibilityConverter}, ConverterParameter=true}" />
+                <!-- 下载列表和分页控件 -->
+                <Grid Grid.Row="1">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    
+                    <!-- 下载列表 -->
+                    <ListView Grid.Row="0" ItemsSource="{Binding PagedDownloadTasks}" 
+                              ItemTemplate="{StaticResource DownloadTaskTemplate}"
+                              SelectedItem="{Binding SelectedTask}"
+                              BorderThickness="0" Background="Transparent">
+                        <ListView.ItemContainerStyle>
+                            <Style TargetType="ListViewItem">
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="6" />
+                                <Setter Property="Margin" Value="0,1" />
+                                <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                <Setter Property="BorderBrush" Value="#EEEEEE" />
+                            </Style>
+                        </ListView.ItemContainerStyle>
+                    </ListView>
+                    
+                    <!-- 分页导航条 -->
+                    <StackPanel Grid.Row="1" Margin="0,10,0,0" Orientation="Horizontal" HorizontalAlignment="Center">
+                        <!-- 上一页按钮 -->
+                        <Button Content="&lt;" Width="32" Height="32" Margin="2,0"
+                                Command="{Binding PreviousPageCommand}"
+                                Foreground="#555555" FontWeight="Bold" FontSize="12"
+                                Background="Transparent" BorderThickness="0">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                                        CornerRadius="5" Padding="5">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="border" Property="Background" Value="#22000000" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter TargetName="border" Property="Background" Value="#44000000" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.5" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                        
+                        <!-- 页码列表 -->
+                        <ItemsControl ItemsSource="{Binding PageNumbers}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal" />
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Width="26" Height="26" Margin="1,0"
+                                        Content="{Binding Number}"
+                                        Command="{Binding DataContext.GoToPageCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                        CommandParameter="{Binding Number}"
+                                        Background="{Binding IsCurrentPage, Converter={StaticResource PageNumberToBrushConverter}}"
+                                        BorderThickness="0"
+                                        Foreground="{Binding IsCurrentPage, Converter={StaticResource PageNumberToForegroundConverter}}">
+                                    <Button.Resources>
+                                        <Style TargetType="TextBlock">
+                                            <Setter Property="FontSize" Value="12"/>
+                                        </Style>
+                                    </Button.Resources>
+                                        <Button.Style>
+                                            <Style TargetType="Button">
+                                                <Setter Property="Template">
+                                                    <Setter.Value>
+                                                        <ControlTemplate TargetType="Button">
+                                                            <Border Background="{TemplateBinding Background}" 
+                                                                    CornerRadius="4" 
+                                                                    BorderThickness="{TemplateBinding BorderThickness}"
+                                                                    BorderBrush="{TemplateBinding BorderBrush}">
+                                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                            </Border>
+                                                        </ControlTemplate>
+                                                    </Setter.Value>
+                                                </Setter>
+                                            </Style>
+                                        </Button.Style>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                        
+                        <!-- 下一页按钮 -->
+                        <Button Content="&gt;" Width="32" Height="32" Margin="2,0"
+                                Command="{Binding NextPageCommand}"
+                                Foreground="#555555" FontWeight="Bold" FontSize="12"
+                                Background="Transparent" BorderThickness="0">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="border" Background="{TemplateBinding Background}" 
+                                                        CornerRadius="5" Padding="5">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter TargetName="border" Property="Background" Value="#22000000" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter TargetName="border" Property="Background" Value="#44000000" />
+                                                    </Trigger>
+                                                    <Trigger Property="IsEnabled" Value="False">
+                                                        <Setter Property="Opacity" Value="0.5" />
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                    
+                    <!-- 无数据提示 -->
+                    <TextBlock Grid.Row="0" Text="暂无下载任务，请添加下载链接" 
+                               HorizontalAlignment="Center" VerticalAlignment="Center" 
+                               Foreground="#AAAAAA" FontSize="14"
+                               Visibility="{Binding DownloadTasks.Count, Converter={StaticResource ZeroToVisibilityConverter}, ConverterParameter=true}" />
+                </Grid>
             </Grid>
         </Border>
         
